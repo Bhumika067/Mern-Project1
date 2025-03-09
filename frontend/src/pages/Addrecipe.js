@@ -443,9 +443,197 @@
 
 
 
+// import React, { useState } from "react";
+// import { useNavigate, Navigate, useLocation } from "react-router-dom";
+// import useAuth from "../hooks/useAuth";
+
+// const AddRecipe = () => {
+//   const auth = useAuth();
+//   const navigate = useNavigate();
+//   const location = useLocation();
+
+//   const [recipe, setRecipe] = useState({
+//     name: "",
+//     ingredients: "",
+//     instructions: "",
+//     image: "",
+//   });
+
+//   const [successMessage, setSuccessMessage] = useState("");
+
+//   // Redirect if not authenticated (while preserving the intended page)
+//   if (!auth.isAuthenticated) {
+//     return <Navigate to="/login" state={{ from: location.pathname }} />;
+//   }
+
+//   const handleChange = (e) => {
+//     setRecipe({ ...recipe, [e.target.name]: e.target.value.trim() });
+//   };
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+
+//     if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
+//       alert("Please fill out all fields.");
+//       return;
+//     }
+
+//     const savedRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
+//     const updatedRecipes = [...savedRecipes, recipe];
+
+//     localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
+
+//     setSuccessMessage("Recipe added successfully! Redirecting...");
+//     setTimeout(() => navigate("/"), 3000); // Redirect to home after 2s
+//   };
+
+//   return (
+//     <div style={styles.container}>
+//       <div style={styles.formContainer}>
+//         <h2 style={styles.title}>Add a New Recipe</h2>
+
+//         {successMessage && <p style={styles.successMessage}>{successMessage}</p>}
+
+//         <form onSubmit={handleSubmit} style={styles.form}>
+//           <label style={styles.label}>Recipe Name</label>
+//           <input 
+//             type="text" 
+//             name="name" 
+//             placeholder="Enter recipe name" 
+//             value={recipe.name} 
+//             onChange={handleChange} 
+//             required 
+//             style={styles.input} 
+//           />
+
+//           <label style={styles.label}>Ingredients</label>
+//           <textarea 
+//             name="ingredients" 
+//             placeholder="Enter ingredients (comma-separated)" 
+//             value={recipe.ingredients} 
+//             onChange={handleChange} 
+//             required 
+//             style={styles.textarea} 
+//           />
+
+//           <label style={styles.label}>Instructions</label>
+//           <textarea 
+//             name="instructions" 
+//             placeholder="Enter instructions" 
+//             value={recipe.instructions} 
+//             onChange={handleChange} 
+//             required 
+//             style={styles.textarea} 
+//           />
+
+//           <label style={styles.label}>Image URL (Optional)</label>
+//           <input 
+//             type="text" 
+//             name="image" 
+//             placeholder="Enter image URL" 
+//             value={recipe.image} 
+//             onChange={handleChange} 
+//             style={styles.input} 
+//           />
+
+//           {recipe.image && (
+//             <img src={recipe.image} alt="Recipe Preview" style={styles.imagePreview} />
+//           )}
+
+//           <button type="submit" style={styles.button}>Add Recipe</button>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ✅ **Updated Styles**
+// const styles = {
+//   container: {
+//     display: "flex",
+//     justifyContent: "center",
+//     alignItems: "center",
+//     height: "100vh",
+//     background: "linear-gradient(to bottom, #FF512F, #DD2476)",
+//     fontFamily: "Arial, sans-serif",
+//   },
+//   formContainer: {
+//     background: "#fff",
+//     padding: "30px",
+//     borderRadius: "12px",
+//     boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.1)",
+//     textAlign: "center",
+//     width: "100%",
+//     maxWidth: "500px",
+//   },
+//   title: {
+//     fontSize: "26px",
+//     fontWeight: "bold",
+//     marginBottom: "20px",
+//     color: "#333",
+//   },
+//   label: {
+//     fontSize: "16px",
+//     fontWeight: "bold",
+//     textAlign: "left",
+//     display: "block",
+//     margin: "10px 0 5px",
+//   },
+//   input: {
+//     width: "100%",
+//     padding: "10px",
+//     marginBottom: "10px",
+//     borderRadius: "6px",
+//     border: "1px solid #ddd",
+//     fontSize: "16px",
+//     boxSizing: "border-box",
+//   },
+//   textarea: {
+//     width: "100%",
+//     padding: "10px",
+//     height: "80px",
+//     marginBottom: "10px",
+//     borderRadius: "6px",
+//     border: "1px solid #ddd",
+//     fontSize: "16px",
+//     boxSizing: "border-box",
+//   },
+//   imagePreview: {
+//     width: "100%",
+//     maxHeight: "200px",
+//     objectFit: "cover",
+//     borderRadius: "8px",
+//     marginTop: "10px",
+//   },
+//   button: {
+//     width: "100%",
+//     padding: "12px",
+//     background: "#ff6f00",
+//     color: "white",
+//     border: "none",
+//     borderRadius: "8px",
+//     cursor: "pointer",
+//     fontSize: "18px",
+//     marginTop: "10px",
+//     transition: "background-color 0.3s ease",
+//   },
+//   successMessage: {
+//     color: "green",
+//     fontSize: "16px",
+//     marginBottom: "10px",
+//   },
+// };
+
+// export default AddRecipe;
+
+
+
+
 import React, { useState } from "react";
 import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
+
+const BASE_URL = "http://localhost:5000/api/recipes"; // Backend API URL
 
 const AddRecipe = () => {
   const auth = useAuth();
@@ -460,6 +648,7 @@ const AddRecipe = () => {
   });
 
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Redirect if not authenticated (while preserving the intended page)
   if (!auth.isAuthenticated) {
@@ -470,21 +659,33 @@ const AddRecipe = () => {
     setRecipe({ ...recipe, [e.target.name]: e.target.value.trim() });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage(""); // Clear previous errors
 
     if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
-      alert("Please fill out all fields.");
+      setErrorMessage("Please fill out all fields.");
       return;
     }
 
-    const savedRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
-    const updatedRecipes = [...savedRecipes, recipe];
+    try {
+      const response = await fetch(`${BASE_URL}/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // Include session-based authentication
+        body: JSON.stringify(recipe),
+      });
 
-    localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
-
-    setSuccessMessage("Recipe added successfully! Redirecting...");
-    setTimeout(() => navigate("/"), 3000); // Redirect to home after 2s
+      if (response.ok) {
+        setSuccessMessage("Recipe added successfully! Redirecting...");
+        setTimeout(() => navigate("/"), 2000); // Redirect to home after 2s
+      } else {
+        setErrorMessage("Failed to add recipe. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error adding recipe:", error);
+      setErrorMessage("Server error. Please try again later.");
+    }
   };
 
   return (
@@ -493,6 +694,7 @@ const AddRecipe = () => {
         <h2 style={styles.title}>Add a New Recipe</h2>
 
         {successMessage && <p style={styles.successMessage}>{successMessage}</p>}
+        {errorMessage && <p style={styles.errorMessage}>{errorMessage}</p>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <label style={styles.label}>Recipe Name</label>
@@ -619,6 +821,11 @@ const styles = {
   },
   successMessage: {
     color: "green",
+    fontSize: "16px",
+    marginBottom: "10px",
+  },
+  errorMessage: {
+    color: "red",
     fontSize: "16px",
     marginBottom: "10px",
   },

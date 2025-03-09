@@ -2084,53 +2084,245 @@
 
 
 
+// import React, { useState, useEffect } from "react";
+// import { useNavigate, useParams } from "react-router-dom";
+
+// const EditRecipe = () => {
+//   const { id } = useParams();
+//   const navigate = useNavigate();
+//   const [recipe, setRecipe] = useState({ name: "", ingredients: "", instructions: "", image: "" });
+
+//   useEffect(() => {
+//     const recipes = JSON.parse(localStorage.getItem("recipes")) || [];
+//     const recipeToEdit = recipes.find((recipe) => recipe.id === parseInt(id));
+
+//     if (recipeToEdit) {
+//       setRecipe(recipeToEdit);
+//     } else {
+//       alert("Recipe not found!");
+//       navigate("/");
+//     }
+//   }, [id, navigate]);
+
+//   const handleChange = (e) => {
+//     setRecipe({ ...recipe, [e.target.name]: e.target.value });
+//   };
+
+//   const handleSubmit = (e) => {
+//     e.preventDefault();
+//     const recipes = JSON.parse(localStorage.getItem("recipes")) || [];
+//     const updatedRecipes = recipes.map((r) => (r.id === parseInt(id) ? recipe : r));
+
+//     localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
+//     alert("Recipe updated successfully!");
+//     navigate("/");
+//   };
+
+//   return (
+//     <div>
+//       <h2>Edit Recipe</h2>
+//       <form onSubmit={handleSubmit}>
+//         <input type="text" name="name" value={recipe.name} onChange={handleChange} required />
+//         <textarea name="ingredients" value={recipe.ingredients} onChange={handleChange} required />
+//         <textarea name="instructions" value={recipe.instructions} onChange={handleChange} required />
+//         <input type="text" name="image" value={recipe.image} onChange={handleChange} />
+//         {recipe.image && <img src={recipe.image} alt="Preview" width="200" />}
+//         <button type="submit">Save Changes</button>
+//       </form>
+//     </div>
+//   );
+// };
+
+// export default EditRecipe;  // Ensure default export
+
+
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import useAuth from "../hooks/useAuth";
+
+const BASE_URL = "http://localhost:5000/api/recipes"; // Backend API URL
 
 const EditRecipe = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const auth = useAuth(); // Check authentication
+
   const [recipe, setRecipe] = useState({ name: "", ingredients: "", instructions: "", image: "" });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
-    const recipes = JSON.parse(localStorage.getItem("recipes")) || [];
-    const recipeToEdit = recipes.find((recipe) => recipe.id === parseInt(id));
-
-    if (recipeToEdit) {
-      setRecipe(recipeToEdit);
-    } else {
-      alert("Recipe not found!");
-      navigate("/");
+    if (!auth.isAuthenticated) {
+      navigate("/login", { state: { from: `/edit-recipe/${id}` } });
+      return;
     }
-  }, [id, navigate]);
+
+    const fetchRecipe = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/${id}`, {
+          credentials: "include", // Include authentication
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setRecipe(data);
+        } else {
+          setErrorMessage("Recipe not found!");
+          setTimeout(() => navigate("/"), 2000);
+        }
+      } catch (error) {
+        console.error("Error fetching recipe:", error);
+        setErrorMessage("Error fetching recipe. Try again later.");
+      }
+    };
+
+    fetchRecipe();
+  }, [id, auth.isAuthenticated, navigate]);
 
   const handleChange = (e) => {
-    setRecipe({ ...recipe, [e.target.name]: e.target.value });
+    setRecipe({ ...recipe, [e.target.name]: e.target.value.trim() });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const recipes = JSON.parse(localStorage.getItem("recipes")) || [];
-    const updatedRecipes = recipes.map((r) => (r.id === parseInt(id) ? recipe : r));
+    setErrorMessage("");
 
-    localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
-    alert("Recipe updated successfully!");
-    navigate("/");
+    if (!recipe.name || !recipe.ingredients || !recipe.instructions) {
+      setErrorMessage("Please fill out all fields.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/update/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(recipe),
+      });
+
+      if (response.ok) {
+        setSuccessMessage("Recipe updated successfully! Redirecting...");
+        setTimeout(() => navigate("/"), 2000);
+      } else {
+        setErrorMessage("Failed to update recipe. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating recipe:", error);
+      setErrorMessage("Server error. Please try again later.");
+    }
   };
 
   return (
-    <div>
-      <h2>Edit Recipe</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="text" name="name" value={recipe.name} onChange={handleChange} required />
-        <textarea name="ingredients" value={recipe.ingredients} onChange={handleChange} required />
-        <textarea name="instructions" value={recipe.instructions} onChange={handleChange} required />
-        <input type="text" name="image" value={recipe.image} onChange={handleChange} />
-        {recipe.image && <img src={recipe.image} alt="Preview" width="200" />}
-        <button type="submit">Save Changes</button>
-      </form>
+    <div style={styles.container}>
+      <div style={styles.formContainer}>
+        <h2 style={styles.title}>Edit Recipe</h2>
+
+        {successMessage && <p style={styles.successMessage}>{successMessage}</p>}
+        {errorMessage && <p style={styles.errorMessage}>{errorMessage}</p>}
+
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <label style={styles.label}>Recipe Name</label>
+          <input type="text" name="name" value={recipe.name} onChange={handleChange} required style={styles.input} />
+
+          <label style={styles.label}>Ingredients</label>
+          <textarea name="ingredients" value={recipe.ingredients} onChange={handleChange} required style={styles.textarea} />
+
+          <label style={styles.label}>Instructions</label>
+          <textarea name="instructions" value={recipe.instructions} onChange={handleChange} required style={styles.textarea} />
+
+          <label style={styles.label}>Image URL</label>
+          <input type="text" name="image" value={recipe.image} onChange={handleChange} style={styles.input} />
+
+          {recipe.image && <img src={recipe.image} alt="Recipe Preview" style={styles.imagePreview} />}
+
+          <button type="submit" style={styles.button}>Save Changes</button>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default EditRecipe;  // Ensure default export
+// ✅ **Updated Styles**
+const styles = {
+  container: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    background: "linear-gradient(to bottom, #FF512F, #DD2476)",
+    fontFamily: "Arial, sans-serif",
+  },
+  formContainer: {
+    background: "#fff",
+    padding: "30px",
+    borderRadius: "12px",
+    boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.1)",
+    textAlign: "center",
+    width: "100%",
+    maxWidth: "500px",
+  },
+  title: {
+    fontSize: "26px",
+    fontWeight: "bold",
+    marginBottom: "20px",
+    color: "#333",
+  },
+  label: {
+    fontSize: "16px",
+    fontWeight: "bold",
+    textAlign: "left",
+    display: "block",
+    margin: "10px 0 5px",
+  },
+  input: {
+    width: "100%",
+    padding: "10px",
+    marginBottom: "10px",
+    borderRadius: "6px",
+    border: "1px solid #ddd",
+    fontSize: "16px",
+    boxSizing: "border-box",
+  },
+  textarea: {
+    width: "100%",
+    padding: "10px",
+    height: "80px",
+    marginBottom: "10px",
+    borderRadius: "6px",
+    border: "1px solid #ddd",
+    fontSize: "16px",
+    boxSizing: "border-box",
+  },
+  imagePreview: {
+    width: "100%",
+    maxHeight: "200px",
+    objectFit: "cover",
+    borderRadius: "8px",
+    marginTop: "10px",
+  },
+  button: {
+    width: "100%",
+    padding: "12px",
+    background: "#ff6f00",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "18px",
+    marginTop: "10px",
+    transition: "background-color 0.3s ease",
+  },
+  successMessage: {
+    color: "green",
+    fontSize: "16px",
+    marginBottom: "10px",
+  },
+  errorMessage: {
+    color: "red",
+    fontSize: "16px",
+    marginBottom: "10px",
+  },
+};
+
+export default EditRecipe;

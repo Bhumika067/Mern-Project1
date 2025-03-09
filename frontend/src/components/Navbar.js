@@ -17,7 +17,7 @@ function Navbar() {
         {/* Left side links */}
         <ul style={styles.leftLinks}>
           <li>
-            <Link to="/Addrecipe" style={styles.link} onClick={() => setIsOpen(false)}>
+            <Link to="/add-recipe" style={styles.link} onClick={() => setIsOpen(false)}>
               Add Recipe
             </Link>
           </li>
